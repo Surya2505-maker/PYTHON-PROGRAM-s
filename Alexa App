@@ -1,0 +1,88 @@
+import speech_recognition as sr
+import pyttsx3
+import pywhatkit
+import datetime
+import wikipedia
+import pyjokes
+import sys
+
+# Initialize recognizer and engine
+listener = sr.Recognizer()
+engine = pyttsx3.init()
+
+# Select voice (female if available)
+voices = engine.getProperty('voices')
+engine.setProperty('voice', voices[1].id if len(voices) > 1 else voices[0].id)
+
+def engine_talk(text):
+    print(f"Alexa is saying: {text}")
+    engine.say(text)
+    engine.runAndWait()
+    engine.stop()
+
+def user_commands():
+    """Listen for user voice commands and return recognized text."""
+    try:
+        with sr.Microphone() as source:
+            print("Start Speaking!!")
+            listener.adjust_for_ambient_noise(source, duration=1)
+            audio = listener.listen(source, timeout=5, phrase_time_limit=7)
+            print("Recognizing... ⏳")
+            command = listener.recognize_google(audio)
+            command = command.lower()
+            print(f"User said: {command}")
+            if 'alexa' in command:
+                command = command.replace('alexa', '').strip()
+            return command
+    except sr.WaitTimeoutError:
+        print("Listening timed out (no speech detected).")
+        return ""
+    except sr.UnknownValueError:
+        print("Could not understand audio.")
+        return ""
+    except sr.RequestError:
+        print("Could not reach Google Speech Recognition service.")
+        return ""
+    except Exception as e:
+        print(f"Error: {e}")
+        return ""
+
+def run_alexa():
+    """Main Alexa logic."""
+    command = user_commands()
+    if command:
+     if 'play' in command:
+        song = command.replace('play', '').strip()
+        engine_talk(f"Playing {song}")
+        pywhatkit.playonyt(song)
+     elif 'time' in command:
+        time = datetime.datetime.now().strftime('%I:%M %p')
+        engine_talk(f"The current time is {time}")
+     elif 'who is' in command:
+        person = command.replace('who is', '').strip()
+        try:
+            info = wikipedia.summary(person, 1)
+            print(info)
+            engine_talk(info)
+        except Exception:
+            engine_talk("Sorry, I couldn't find any information about that.")
+     elif 'joke' in command:
+        engine_talk(pyjokes.get_joke())
+     elif 'stop' in command or 'exit' in command:
+        engine_talk("Goodbye!")
+        sys.exit()
+     elif 'can you hear me' in command:
+        engine_talk("Yes, I can hear you loud and clear!")
+     elif 'how are you' in command:
+        engine_talk("I'm doing great, thanks for asking!")
+     elif 'hello' in command or 'hi' in command:
+        engine_talk("Hello there! How can I help you today?")
+     else:
+        engine_talk("I could not hear you properly.")
+
+    else:
+        engine_talk("I did not catch that. Please speak again.")
+
+# Run Alexa loop
+while True:
+    run_alexa()
